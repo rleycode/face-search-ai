@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>AI Face Search</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-color: var(--tg-theme-bg-color, #1c1c1e);
+            --text-color: var(--tg-theme-text-color, #ffffff);
+            --accent-color: var(--tg-theme-button-color, #007aff);
+            --card-bg: var(--tg-theme-secondary-bg-color, #2c2c2e);
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            animation: fadeIn 1s ease;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 800;
+            margin: 0;
+            background: linear-gradient(90deg, #007aff, #00d4ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+
+        .upload-area {
+            width: 100%;
+            max-width: 320px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-area.active {
+            border-color: var(--accent-color);
+            background: rgba(0, 122, 255, 0.1);
+        }
+
+        .upload-icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+            transition: transform 0.3s;
+        }
+
+
+        #preview {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+            border-radius: 18px;
+            display: none;
+        }
+
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            max-width: 320px;
+            margin-top: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .btn-add {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+        }
+
+        .btn-search {
+            background-color: var(--accent-color);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(0, 122, 255, 0.3);
+        }
+
+
+        #loader {
+            display: none;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .scan-line {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: #00d4ff;
+            box-shadow: 0 0 10px #00d4ff;
+            top: 0;
+            left: 0;
+            animation: scan 2s infinite linear;
+            display: none;
+            z-index: 10;
+        }
+
+        @keyframes scan {
+            0% {
+                top: 0;
+                opacity: 0;
+            }
+
+            10% {
+                opacity: 1;
+            }
+
+            90% {
+                opacity: 1;
+            }
+
+            100% {
+                top: 100%;
+                opacity: 0;
+            }
+        }
+
+
+        .result-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 15px;
+            margin-top: 20px;
+            width: 100%;
+            max-width: 320px;
+            animation: slideUp 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .score-badge {
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .match-high {
+            background: rgba(46, 204, 113, 0.2);
+            color: #2ecc71;
+        }
+
+        .match-low {
+            background: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <lottie-player src="https://assets2.lottiefiles.com/packages/lf20_w51pcehl.json" background="transparent"
+            speed="1" style="width: 80px; height: 80px; margin: 0 auto;" loop autoplay></lottie-player>
+        <h1>AI Face Search</h1>
+        <p style="opacity: 0.6; font-size: 14px;">Загрузи фото для анализа</p>
+    </header>
+
+    <div class="upload-area" onclick="document.getElementById('photoInput').click()">
+        <div class="scan-line" id="scanLine"></div>
+        <div id="placeholder">
+            <div class="upload-icon">📸</div>
+            <div style="font-size: 14px; opacity: 0.7;">Нажми, чтобы загрузить</div>
+        </div>
+        <img id="preview" alt="Preview">
+    </div>
+
+    <input type="file" id="photoInput" accept="image/*" onchange="showPreview(this)">
+
+    <div class="btn-group">
+        <button class="btn-add" onclick="process('add')">Сохранить</button>
+        <button class="btn-search" onclick="process('search')">Найти</button>
+    </div>
+
+    <div id="loader">
+        <lottie-player src="https://assets9.lottiefiles.com/packages/lf20_p8bfn5to.json" background="transparent"
+            speed="1" style="width: 100px; height: 100px; margin: 0 auto;" loop autoplay></lottie-player>
+        <div style="opacity: 0.7; font-size: 14px;">Анализирую биометрию</div>
+    </div>
+
+    <div id="resultsArea"></div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.MainButton.hide();
+
+
+        const API_KEY = "secret-key-123";
+
+        function showPreview(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    document.getElementById('preview').src = e.target.result;
+                    document.getElementById('preview').style.display = 'block';
+                    document.getElementById('placeholder').style.display = 'none';
+
+                    tg.HapticFeedback.impactOccurred('light');
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        async function process(action) {
+            const input = document.getElementById('photoInput');
+            const resultsArea = document.getElementById('resultsArea');
+            const loader = document.getElementById('loader');
+            const scanLine = document.getElementById('scanLine');
+
+            if (input.files.length === 0) {
+                tg.showAlert("Сначала выбери фото!");
+                return;
+            }
+
+
+            resultsArea.innerHTML = "";
+            loader.style.display = "block";
+            scanLine.style.display = "block";
+            tg.MainButton.showProgress();
+
+            const formData = new FormData();
+            formData.append("file", input.files[0]);
+            const endpoint = action === 'add' ? '/add_face/' : '/search/';
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'x-api-key': API_KEY },
+                    body: formData
+                });
+
+                const data = await response.json();
+                loader.style.display = "none";
+                scanLine.style.display = "none";
+                tg.MainButton.hideProgress();
+
+                if (data.status === 'success' && action === 'add') {
+                    tg.HapticFeedback.notificationOccurred('success');
+                    resultsArea.innerHTML = `
+                        <div class="result-card">
+                            <div>
+                                <div style="font-weight: bold;">Успешно сохранено!</div>
+                                <div style="font-size: 12px; opacity: 0.6;">ID: ${data.db_id}</div>
+                            </div>
+                            <div class="score-badge match-high">✓</div>
+                        </div>
+                    `;
+                }
+                else if (data.results && action === 'search') {
+                    tg.HapticFeedback.impactOccurred('medium');
+                    if (data.results.length === 0) {
+                        resultsArea.innerHTML = '<div style="margin-top:20px; opacity:0.6;">Никого не нашел </div>';
+                        return;
+                    }
+
+                    let html = '';
+                    data.results.forEach(item => {
+                        const percent = Math.max(0, (1 - item.distance) * 100).toFixed(0);
+                        const isMatch = item.distance < 0.6;
+                        const badgeClass = isMatch ? 'match-high' : 'match-low';
+                        const badgeText = isMatch ? `Совпадение ${percent}%` : `Не похож (${percent}%)`;
+
+                        html += `
+                            <div class="result-card">
+                                <div>
+                                    <div style="font-weight: bold;">Лицо из базы</div>
+                                    <div style="font-size: 12px; opacity: 0.6;">ID: ${item.db_id}</div>
+                                </div>
+                                <div class="score-badge ${badgeClass}">${badgeText}</div>
+                            </div>
+                        `;
+                    });
+                    resultsArea.innerHTML = html;
+                }
+                else {
+                    tg.showAlert("Ошибка: " + (data.message || "Неизвестная ошибка"));
+                }
+
+            } catch (error) {
+                loader.style.display = "none";
+                scanLine.style.display = "none";
+                tg.showAlert("Ошибка сети: " + error.message);
+            }
+        }
+    </script>
+</body>
+
+</html>
